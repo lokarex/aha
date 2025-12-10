@@ -35,7 +35,7 @@ fn robo_brain_generate() -> Result<()> {
     let i_start = Instant::now();
     let result = model.generate(mes)?;
     let i_duration = i_start.elapsed();
-    println!("generate: \n {:?}", result);    
+    println!("generate: \n {:?}", result);
     if result.usage.is_some() {
         let num_token = result.usage.as_ref().unwrap().total_tokens;
         let duration_secs = i_duration.as_secs_f64();

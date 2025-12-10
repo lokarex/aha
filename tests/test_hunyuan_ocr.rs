@@ -48,7 +48,7 @@ fn hunyuan_ocr_generate() -> Result<()> {
         println!("Tokens per second (TPS): {:.2}", tps);
     }
     println!("Time elapsed in generate is: {:?}", i_duration);
-    
+
     Ok(())
 }
 

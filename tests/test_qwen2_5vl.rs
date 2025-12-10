@@ -45,7 +45,7 @@ fn qwen2_5vl_generate() -> Result<()> {
     println!("Time elapsed in load model is: {:?}", i_duration);
 
     let i_start = Instant::now();
-    let result = model.generate(mes)?;    
+    let result = model.generate(mes)?;
     let i_duration = i_start.elapsed();
     println!("generate: \n {:?}", result);
     if result.usage.is_some() {

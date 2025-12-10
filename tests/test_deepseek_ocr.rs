@@ -48,7 +48,7 @@ fn deepseek_ocr_generate() -> Result<()> {
         let tps = num_token as f64 / duration_secs;
         println!("Tokens per second (TPS): {:.2}", tps);
     }
-    println!("Time elapsed in generate is: {:?}", i_duration);    
+    println!("Time elapsed in generate is: {:?}", i_duration);
     Ok(())
 }
 

@@ -222,9 +222,9 @@ impl<'a> GenerateModel for Qwen2_5VLGenerateModel<'a> {
                     "</tool_call>" => {
                         // 结束工具调用
                         let chunk = build_completion_chunk_response(
-                            decoded_token, 
-                            &self.model_name, 
-                            tool_call_id.clone(), 
+                            decoded_token,
+                            &self.model_name,
+                            tool_call_id.clone(),
                             Some(tool_call_content.clone())
                         );
                         tool_call_id = None;
@@ -245,15 +245,15 @@ impl<'a> GenerateModel for Qwen2_5VLGenerateModel<'a> {
                         } else {
                             // 正常文本输出
                             let chunk = build_completion_chunk_response(
-                                decoded_token, 
-                                &self.model_name, 
-                                None, 
+                                decoded_token,
+                                &self.model_name,
+                                None,
                                 None
                             );
                             yield Ok(chunk);
                         }
                     }
-                }          
+                }
                 // let chunk = build_completion_chunk_response(decoded_token, &self.model_name, None, None);
                 // yield Ok(chunk);
                 if next_token == self.endoftext_id || next_token == self.im_end_id {
