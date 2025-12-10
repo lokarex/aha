@@ -24,10 +24,10 @@ fn qwen3vl_generate() -> Result<()> {
                         {
                             "url": "./assets/video/video_test.mp4"
                         }
-                    },             
+                    },              
                     {
                         "type": "text", 
-                        "text": "视频里发生了什么"
+                        "text": "视频中发生了什么？, 现在几点了"
                     }
                 ]
             }
@@ -44,6 +44,12 @@ fn qwen3vl_generate() -> Result<()> {
     let res = qwen3vl.generate(mes)?;
     let i_duration = i_start.elapsed();
     println!("generate: \n {:?}", res);
+    if res.usage.is_some() {
+        let num_token = res.usage.as_ref().unwrap().total_tokens;
+        let duration_secs = i_duration.as_secs_f64();
+        let tps = num_token as f64 / duration_secs;
+        println!("Tokens per second (TPS): {:.2}", tps);
+    }
     println!("Time elapsed in generate is: {:?}", i_duration);
     Ok(())
 }
@@ -60,7 +66,7 @@ async fn qwen3vl_stream() -> Result<()> {
         "messages": [
             {
                 "role": "user",
-                "content": [ 
+                "content": [
                     {
                         "type": "video",
                         "video_url": 
