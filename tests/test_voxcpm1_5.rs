@@ -7,9 +7,9 @@ use aha::{
 use anyhow::{Ok, Result};
 
 #[test]
-fn voxcpm_generate() -> Result<()> {
-    // RUST_BACKTRACE=1 cargo test -F cuda,flash-attn voxcpm_generate -r -- --nocapture
-    let model_path = "/home/jhq/huggingface_model/openbmb/VoxCPM-0.5B/";
+fn voxcpm1_5_generate() -> Result<()> {
+    // RUST_BACKTRACE=1 cargo test -F cuda voxcpm1_5_generate -r -- --nocapture
+    let model_path = "/home/jhq/huggingface_model/OpenBMB/VoxCPM1.5/";
 
     let i_start = Instant::now();
     let mut voxcpm_generate = VoxCPMGenerate::init(model_path, None, None)?;
@@ -20,12 +20,12 @@ fn voxcpm_generate() -> Result<()> {
     // let generate = voxcpm_generate.generate_simple("太阳当空照，花儿对我笑，小鸟说早早早".to_string())?;
     let generate = voxcpm_generate.generate(
         "太阳当空照，花儿对我笑，小鸟说早早早".to_string(),
-        Some("啥子小师叔，打狗还要看主人，你再要继续，我，就是你的对手".to_string()),
+        Some("啥子小师叔，打狗还要看主人，你再要继续，我就是你的对手".to_string()),
         Some("./assets/audio/voice_01.wav".to_string()),
         // Some("一定被灰太狼给吃了，我已经为他准备好了花圈了".to_string()),
         // Some("./assets/audio/voice_05.wav".to_string()),
         2,
-        100,
+        4096,
         10,
         2.0,
         false,
@@ -50,13 +50,14 @@ fn voxcpm_generate() -> Result<()> {
 
     let i_duration = i_start.elapsed();
     println!("Time elapsed in generate is: {:?}", i_duration);
-    save_wav(&generate, "voxcpm.wav", 16000)?;
+    save_wav(&generate, "voxcpm1_5.wav", 44100)?;
     Ok(())
 }
 
 #[test]
-fn voxcpm_tokenizer() -> Result<()> {
-    let model_path = "/home/jhq/huggingface_model/openbmb/VoxCPM-0.5B/";
+fn voxcpm1_5_tokenizer() -> Result<()> {
+    // RUST_BACKTRACE=1 cargo test -F cuda voxcpm1_5_tokenizer -r -- --nocapture
+    let model_path = "/home/jhq/huggingface_model/OpenBMB/VoxCPM1.5/";
     let tokenizer = SingleChineseTokenizer::new(model_path)?;
     let ids = tokenizer.encode("你好啊，你吃饭了吗".to_string())?;
     println!("ids: {:?}", ids);

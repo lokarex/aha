@@ -281,7 +281,7 @@ impl CausalEncoderBlock {
 
 pub struct CausalEncoder {
     block0: WNCausalConv1d,
-    block1_4: Vec<CausalEncoderBlock>,
+    blocks: Vec<CausalEncoderBlock>,
     fc_mu: WNCausalConv1d,
     fc_logvar: WNCausalConv1d,
 }
@@ -298,19 +298,19 @@ impl CausalEncoder {
         let mut groups;
         let block0 = WNCausalConv1d::new(vb.pp("block.0"), 1, d_model, 7, 1, 3, 1, 1)?;
         let vb_block = vb.pp("block");
-        let mut block1_4 = Vec::new();
+        let mut blocks = Vec::new();
         for (i, stride) in strides.iter().enumerate() {
             d_model *= 2;
             groups = if depthwise { d_model / 2 } else { 1 };
             let block_i =
                 CausalEncoderBlock::new(vb_block.pp(i + 1), None, d_model, *stride, groups)?;
-            block1_4.push(block_i);
+            blocks.push(block_i);
         }
         let fc_mu = WNCausalConv1d::new(vb.pp("fc_mu"), d_model, laten_dim, 3, 1, 1, 1, 1)?;
         let fc_logvar = WNCausalConv1d::new(vb.pp("fc_logvar"), d_model, laten_dim, 3, 1, 1, 1, 1)?;
         Ok(Self {
             block0,
-            block1_4,
+            blocks,
             fc_mu,
             fc_logvar,
         })
@@ -318,7 +318,7 @@ impl CausalEncoder {
 
     pub fn forward(&self, x: &Tensor) -> Result<(Tensor, Tensor, Tensor)> {
         let mut hidden_state = self.block0.forward(x)?;
-        for block_i in &self.block1_4 {
+        for block_i in &self.blocks {
             hidden_state = block_i.forward(&hidden_state)?;
         }
         let mu = self.fc_mu.forward(&hidden_state)?;
@@ -401,9 +401,9 @@ impl CausalDecoderBlock {
 pub struct CausalDecoder {
     model0: WNCausalConv1d,
     model1: WNCausalConv1d,
-    model2_5: Vec<CausalDecoderBlock>,
-    model6: Snake1d,
-    model7: WNCausalConv1d,
+    models: Vec<CausalDecoderBlock>,
+    model_minus_2: Snake1d,
+    model_minus_1: WNCausalConv1d,
 }
 
 impl CausalDecoder {
@@ -413,6 +413,7 @@ impl CausalDecoder {
         channels: usize,
         rates: Vec<usize>,
         d_out: usize,
+        depthwise: bool,
     ) -> Result<Self> {
         let model0 = WNCausalConv1d::new(
             vb.pp("model.0"),
@@ -427,11 +428,11 @@ impl CausalDecoder {
         let model1 = WNCausalConv1d::new(vb.pp("model.1"), input_channel, channels, 1, 1, 0, 1, 1)?;
         let vb_model = vb.pp("model");
         let mut output_dim = channels;
-        let mut model2_5 = Vec::new();
+        let mut models = Vec::new();
         for (i, stride) in rates.iter().enumerate() {
             let input_dim = channels / 2_usize.pow(i as u32);
             output_dim = channels / 2_usize.pow((i + 1) as u32);
-            let groups = output_dim;
+            let groups = if depthwise { output_dim } else { 1 };
             let model_i = CausalDecoderBlock::new(
                 vb_model.pp(i + 2),
                 input_dim,
@@ -439,27 +440,28 @@ impl CausalDecoder {
                 *stride,
                 groups,
             )?;
-            model2_5.push(model_i);
+            models.push(model_i);
         }
-        let model6 = Snake1d::new(vb.pp("model.6"), output_dim)?;
-        let model7 = WNCausalConv1d::new(vb.pp("model.7"), output_dim, d_out, 7, 1, 3, 1, 1)?;
+        let idx = rates.len() + 2;
+        let model_minus_2 = Snake1d::new(vb_model.pp(idx), output_dim)?;
+        let model_minus_1 = WNCausalConv1d::new(vb_model.pp(idx+1), output_dim, d_out, 7, 1, 3, 1, 1)?;
         Ok(Self {
             model0,
             model1,
-            model2_5,
-            model6,
-            model7,
+            models,
+            model_minus_2,
+            model_minus_1,
         })
     }
 
     pub fn forward(&self, x: &Tensor) -> Result<Tensor> {
         let x = self.model0.forward(x)?;
         let mut x = self.model1.forward(&x)?;
-        for model_i in &self.model2_5 {
+        for model_i in &self.models {
             x = model_i.forward(&x)?;
         }
-        let x = self.model6.forward(&x)?;
-        let x = self.model7.forward(&x)?;
+        let x = self.model_minus_2.forward(&x)?;
+        let x = self.model_minus_1.forward(&x)?;
         let x = x.tanh()?;
         Ok(x)
     }
@@ -506,6 +508,7 @@ impl AudioVAE {
             decoder_dim,
             decoder_rates.clone(),
             1,
+            true,
         )?;
         let chunk_size = hop_length;
         Ok(Self {
