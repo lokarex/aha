@@ -56,21 +56,27 @@ impl VoxCPMGenerate {
             audio_config.sample_rate,
         )?;
 
-        let model_list = find_type_files(path, "bin")?;
-        // println!(" bin model_list: {:?}", model_list);
-        dict_to_hashmap = HashMap::new();
-        
         let cfg_dtype = config.dtype.as_str();
         let m_dtype = get_dtype(dtype, cfg_dtype);
-        for m in model_list {
-            let dict = read_all_with_key(m, Some("state_dict"))?;
-            for (k, v) in dict {
-                // println!("key: {}, tensor shape: {:?}", k, v);
-                dict_to_hashmap.insert(k, v);
+
+        let model_list = find_type_files(path, "bin")?;
+        // voxcpm0.5B模型文件是.bin类型， voxcpm1.5模型文件是.safetensors类型
+        let vb_voxcpm = if model_list.is_empty() {
+            let model_list = find_type_files(path, "safetensors")?;
+            unsafe { VarBuilder::from_mmaped_safetensors(&model_list, m_dtype, &device)? }
+        } else {
+            dict_to_hashmap = HashMap::new();        
+            let cfg_dtype = config.dtype.as_str();
+            let m_dtype = get_dtype(dtype, cfg_dtype);
+            for m in model_list {
+                let dict = read_all_with_key(m, Some("state_dict"))?;
+                for (k, v) in dict {
+                    // println!("key: {}, tensor shape: {:?}", k, v);
+                    dict_to_hashmap.insert(k, v);
+                }
             }
-        }
-        // println!("model dtype: {:?}", m_dtype);
-        let vb_voxcpm = VarBuilder::from_tensors(dict_to_hashmap, m_dtype, device);
+            VarBuilder::from_tensors(dict_to_hashmap, m_dtype, device)
+        };
         let tokenizer = SingleChineseTokenizer::new(path)?;
         let voxcpm = VoxCPMModel::new(vb_voxcpm, config, tokenizer, audio_vae)?;
 

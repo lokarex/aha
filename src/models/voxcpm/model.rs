@@ -274,7 +274,8 @@ impl UnifiedCFM {
         let mut x = x.clone();
         for step in 1..t_span_len {
             if use_cfg_zero_star && step <= zero_init_steps {
-                dphi_dt = Tensor::zeros(1, t_span.dtype(), t_span.device())?;
+                // dphi_dt = Tensor::zeros(1, t_span.dtype(), t_span.device())?;
+                dphi_dt = x.zeros_like()?;
             } else {
                 let b = x.dim(0)?;
                 // let x_in = Tensor::zeros((2*b, self.in_channels, x.dim(2)?), x.dtype(), x.device())?;
@@ -517,16 +518,18 @@ impl VoxCPMModel {
                 if audio.dim(1)? % patch_len != 0 {
                     audio = audio.pad_with_zeros(
                         D::Minus1,
-                        0,
+                        // 0,
+                        // patch_len - audio.dim(1)? % patch_len,
                         patch_len - audio.dim(1)? % patch_len,
+                        0,
                     )?;
                 }
                 let audio_feat = self.audio_vae.encode(&audio, Some(self.sample_rate))?;
                 let audio_feat = audio_feat
                     .reshape((self.audio_vae.latent_dim, (), self.patch_size))?
                     .permute((1, 2, 0))?;
-                let dim0 = audio_feat.dim(0)? - 1;
-                let audio_feat = audio_feat.i(..dim0)?;
+                // let dim0 = audio_feat.dim(0)? - 1;
+                // let audio_feat = audio_feat.i(..dim0)?;
                 let audio_length = audio_feat.dim(0)?;
                 let text_pad_token = Tensor::zeros(audio_length, DType::U32, &self.device)?;
                 let text_token = Tensor::cat(&[text_token, text_pad_token], D::Minus1)?;
@@ -554,11 +557,13 @@ impl VoxCPMModel {
             }
         };
         let target_text_length = self.tokenizer.encode(target_text)?.len();
-        let max_len = if retry_badcase {
-            (target_text_length as f64 * retry_badcase_ratio_threshold + 10.0) as usize
-        } else {
-            max_len
-        };
+        // let max_len = if retry_badcase {
+        //     (target_text_length as f64 * retry_badcase_ratio_threshold + 10.0) as usize
+        // } else {
+        //     max_len
+        // };
+        let max_len = max_len
+            .min((target_text_length as f64 * retry_badcase_ratio_threshold + 10.0) as usize);
         let decode_audio = self._generate(
             &text_token,
             &text_mask,

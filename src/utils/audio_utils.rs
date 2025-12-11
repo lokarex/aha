@@ -278,10 +278,10 @@ pub fn load_audio_with_resample<P: AsRef<Path>>(
     Ok(audio)
 }
 
-pub fn save_wav(audio: &Tensor, save_path: &str) -> Result<()> {
+pub fn save_wav(audio: &Tensor, save_path: &str, sample_rate: u32) -> Result<()> {
     let spec = hound::WavSpec {
         channels: 1,
-        sample_rate: 16000,
+        sample_rate,
         bits_per_sample: 16,
         sample_format: hound::SampleFormat::Int,
     };

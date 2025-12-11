@@ -20,10 +20,10 @@ fn voxcpm_generate() -> Result<()> {
     // let generate = voxcpm_generate.generate_simple("太阳当空照，花儿对我笑，小鸟说早早早".to_string())?;
     let generate = voxcpm_generate.generate(
         "太阳当空照，花儿对我笑，小鸟说早早早".to_string(),
-        // Some("啥子小师叔，打狗还要看主人，你再要继续，我，就是你的对手".to_string()),
-        // Some("./assets/audio/voice_01.wav".to_string()),
-        Some("一定被灰太狼给吃了，我已经为他准备好了花圈了".to_string()),
-        Some("./assets/audio/voice_05.wav".to_string()),
+        Some("啥子小师叔，打狗还要看主人，你再要继续，我，就是你的对手".to_string()),
+        Some("./assets/audio/voice_01.wav".to_string()),
+        // Some("一定被灰太狼给吃了，我已经为他准备好了花圈了".to_string()),
+        // Some("./assets/audio/voice_05.wav".to_string()),
         2,
         100,
         10,
@@ -50,7 +50,7 @@ fn voxcpm_generate() -> Result<()> {
 
     let i_duration = i_start.elapsed();
     println!("Time elapsed in generate is: {:?}", i_duration);
-    save_wav(&generate, "voxcpm.wav")?;
+    save_wav(&generate, "voxcpm.wav", 16000)?;
     Ok(())
 }
 
